@@ -38,7 +38,7 @@ const addPatientController = async (req, res) => {
     if (validationErrors) {
       const firstErrorMessage =
         validationErrors.errors[Object.keys(validationErrors.errors)[0]].message;
-        console.log(firstErrorMessage)
+      console.log(firstErrorMessage);
       return res
         .status(400)
         .send({ message: firstErrorMessage.message, error: firstErrorMessage, success: false });
@@ -57,20 +57,20 @@ const addPatientController = async (req, res) => {
 
 const updatePatientController = async (req, res) => {
   try {
-    console.log(req.body)
-    const {_id: patientId, ...updateData} = req.body
-    if(!patientId){
-        console.log("################", error, "################# 1 ");
-        return res.status(400).send({message:"Patient ID required", success: false})
+    console.log(req.body);
+    const { _id: patientId, ...updateData } = req.body;
+    if (!patientId) {
+      console.log("################", error, "################# 1 ");
+      return res.status(400).send({ message: "Patient ID required", success: false });
     }
-   
+
     const updatedPatient = await patientModel.findByIdAndUpdate(patientId, req.body, {
       new: true,
       runValidators: true, // This will run the model validators
     });
 
     if (!updatedPatient) {
-        console.log("################", error, "#################  2");
+      console.log("################", error, "#################  2");
       return res.status(404).send({ message: "Patient not found" });
     }
     res
@@ -83,10 +83,23 @@ const updatePatientController = async (req, res) => {
 
 const getAllPatientsController = async (req, res) => {
   try {
+    const { page = 1, limit = 10, searchQuery = "" } = req.query;
+    const query = {
+      $or: [{ email: new RegExp(searchQuery, "i") }, { phoneNumber: new RegExp(searchQuery, "i") }],
+    };
+
     // Fetch all patients from the database
-    const patients = await patientModel.find();
+    const patients = await patientModel
+      .find(query)
+      .skip((page - 1) * limit) // Skip records for previous pages
+      .limit(limit);
+
+    const totalPatients = await patientModel.countDocuments(query); // Get total count
+
     // Send the list of patients as a response
-    res.status(200).json({ success: true, data: patients });
+    res
+      .status(200)
+      .json({ success: true, data: patients, totalPages: Math.ceil(totalPatients / limit) });
   } catch (error) {
     console.log("Error fetching patients:", error);
     res.status(500).send({ success: false, message: "Error fetching patients", error });
