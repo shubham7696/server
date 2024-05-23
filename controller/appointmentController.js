@@ -73,6 +73,27 @@ const getAllAppointmentForToday = async (req, res) => {
   }
 };
 
+const updateAppointment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { updates } = req.body;
+
+    // Find the appointment by ID and update its status
+    const appointment = await appointmentModel.findByIdAndUpdate(id, { updates }, { new: true });
+
+    // Check if the appointment exists
+    if (!appointment) {
+      return res.status(404).json({ success: false, message: "Appointment not found" });
+    }
+
+    res.status(200).json({ success: true, data: appointment });
+  } catch (error) {
+    console.error("Error updating appointment status:", error);
+    res.status(500).json({ success: false, message: "Error updating appointment status", error });
+  }
+};
+
+
 module.exports = {
   addAppointmentController,
   getAllAppointmentForToday,
